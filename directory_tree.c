@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <windows.h>
 
-void SerachDirectoryTreeRec(char* root);
+void SerachDirectoryTreeRec(directoryTree *directoryTreePtr, char* root);
 
 directoryTree* allocate_directoryTree(char *root) {
     directoryTree *directoryTreePtr;
@@ -11,7 +11,7 @@ directoryTree* allocate_directoryTree(char *root) {
     directoryTreePtr = (directoryTree*)malloc(sizeof(directoryTree));
 
     directoryTreePtr->root = root;
-    directoryTreePtr->fptr = fopen("output", "w");
+    directoryTreePtr->fptr = fopen("output", "w+");
 
     return directoryTreePtr;
 }
@@ -21,17 +21,30 @@ void freeDirectoryTree(directoryTree* directoryTreePtr) {
     free(directoryTreePtr);
 }
 
-void SerachDirectoryTree(directoryTree* directoryTreePtr) {
-    SerachDirectoryTreeRec(directoryTreePtr->root);
+void WriteDirNameToFile(directoryTree* directoryTreePtr, char* dir) {
+    fputs(dir, directoryTreePtr->fptr);
+    fputs("\n", directoryTreePtr->fptr);
 }
 
-void SerachDirectoryTreeRec(char* root) {
+void WriteFileNameToFile(directoryTree* directoryTreePtr, char* file) {
+    fputs("\t", directoryTreePtr->fptr);
+    fputs(file, directoryTreePtr->fptr);
+    fputs("\n", directoryTreePtr->fptr);
+}
+
+void SerachDirectoryTree(directoryTree* directoryTreePtr) {
+    SerachDirectoryTreeRec(directoryTreePtr, directoryTreePtr->root);
+}
+
+void SerachDirectoryTreeRec(directoryTree* directoryTreePtr, char* root) {
     char path[MAX_PATH];
     strcpy(path, root);
     strcat(path, "\\*");
     printf("SerachDirectoryTreeRec, root is: %s\n", root);
     HANDLE hFind;
     WIN32_FIND_DATA FindFileData;
+
+    WriteDirNameToFile(directoryTreePtr, root);
 
     hFind = FindFirstFile(path, &FindFileData);
     if (hFind == INVALID_HANDLE_VALUE) {
@@ -43,9 +56,10 @@ void SerachDirectoryTreeRec(char* root) {
                     char *subDirPath = (char*)malloc(sizeof(char)*(strlen(root)+strlen(FindFileData.cFileName)+1));
                     strcpy(subDirPath, root);
                     strcat(strcat(subDirPath, "\\"), FindFileData.cFileName);
-                    SerachDirectoryTreeRec(subDirPath);
+                    SerachDirectoryTreeRec(directoryTreePtr, subDirPath);
                 } else {
                     printf("%s\n", FindFileData.cFileName);
+                    WriteFileNameToFile(directoryTreePtr, FindFileData.cFileName);
                 }
             }
         } while (FindNextFile(hFind, &FindFileData));
