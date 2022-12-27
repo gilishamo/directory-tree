@@ -8,7 +8,8 @@ int main(int argc, char *argv[]) {
     }
 
     directoryTree *d;
+
     d = allocate_directoryTree(argv[1]);
-    SerachDirectoryTree(d);
+    SearchDirectoryTree(d);
     freeDirectoryTree(d); 
 }

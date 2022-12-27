@@ -2,16 +2,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
+#include "utils.h"
 
-void SerachDirectoryTreeRec(directoryTree *directoryTreePtr, char* root);
+// forward declaration
+void SearchDirectoryTreeRec(directoryTree *directoryTreePtr, char* root);
 
 directoryTree* allocate_directoryTree(char *root) {
     directoryTree *directoryTreePtr;
 
     directoryTreePtr = (directoryTree*)malloc(sizeof(directoryTree));
+    if (directoryTreePtr == NULL) {
+        traceAndExit(1, "failed to allocate memmory");
+    }
 
     directoryTreePtr->root = root;
+
     directoryTreePtr->fptr = fopen("output", "w+");
+    if (directoryTreePtr->fptr == NULL) {
+        traceAndExit(2, "failed to open file");
+    }
 
     return directoryTreePtr;
 }
@@ -32,11 +41,11 @@ void WriteFileNameToFile(directoryTree* directoryTreePtr, char* file) {
     fputs("\n", directoryTreePtr->fptr);
 }
 
-void SerachDirectoryTree(directoryTree* directoryTreePtr) {
-    SerachDirectoryTreeRec(directoryTreePtr, directoryTreePtr->root);
+void SearchDirectoryTree(directoryTree* directoryTreePtr) {
+    SearchDirectoryTreeRec(directoryTreePtr, directoryTreePtr->root);
 }
 
-void SerachDirectoryTreeRec(directoryTree* directoryTreePtr, char* root) {
+void SearchDirectoryTreeRec(directoryTree* directoryTreePtr, char* root) {
     char path[MAX_PATH];
     strcpy(path, root);
     strcat(path, "\\*");
@@ -49,25 +58,27 @@ void SerachDirectoryTreeRec(directoryTree* directoryTreePtr, char* root) {
     hFind = FindFirstFile(path, &FindFileData);
     if (hFind == INVALID_HANDLE_VALUE) {
         printf ("FindFirstFile failed (%d)\n", GetLastError());
-    } else {
-        do {
-            if (strcmp(FindFileData.cFileName, ".") != 0 && strcmp(FindFileData.cFileName, "..") != 0) {
-                if (FindFileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
-                    char *subDirPath = (char*)malloc(sizeof(char)*(strlen(root)+strlen(FindFileData.cFileName)+1));
-                    strcpy(subDirPath, root);
-                    strcat(strcat(subDirPath, "\\"), FindFileData.cFileName);
-                    SerachDirectoryTreeRec(directoryTreePtr, subDirPath);
-                } else {
-                    printf("%s\n", FindFileData.cFileName);
-                    WriteFileNameToFile(directoryTreePtr, FindFileData.cFileName);
-                }
-            }
-        } while (FindNextFile(hFind, &FindFileData));
-
-        if (GetLastError() != ERROR_NO_MORE_FILES) {
-            printf ("FindNextFile failed (%d)\n", GetLastError());
-        } 
+        goto cleanup;
     }
+
+    do {
+        if (strcmp(FindFileData.cFileName, ".") != 0 && strcmp(FindFileData.cFileName, "..") != 0) {
+            if (FindFileData.dwFileAttributes == FILE_ATTRIBUTE_DIRECTORY) {
+                char *subDirPath = (char*)malloc(sizeof(char)*(strlen(root)+strlen(FindFileData.cFileName)+1));
+                strcpy(subDirPath, root);
+                strcat(strcat(subDirPath, "\\"), FindFileData.cFileName);
+                SearchDirectoryTreeRec(directoryTreePtr, subDirPath);
+            } else {
+                printf("%s\n", FindFileData.cFileName);
+                WriteFileNameToFile(directoryTreePtr, FindFileData.cFileName);
+            }
+        }
+    } while (FindNextFile(hFind, &FindFileData));
+
+    if (GetLastError() != ERROR_NO_MORE_FILES) {
+        printf ("FindNextFile failed (%d)\n", GetLastError());
+    } 
+    
 
     cleanup:
     FindClose(hFind);

@@ -10,6 +10,6 @@ typedef struct _directoryTree {
 
 directoryTree* allocate_directoryTree(char *root);
 void freeDirectoryTree(directoryTree* directoryTreePtr);
-void SerachDirectoryTree(directoryTree* directoryTreePtr);
+void SearchDirectoryTree(directoryTree* directoryTreePtr);
 
 #endif
